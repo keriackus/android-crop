@@ -21,6 +21,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Matrix;
+import android.graphics.Path;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.net.Uri;
@@ -28,8 +30,11 @@ import android.opengl.GLES10;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.view.Display;
 import android.view.View;
 import android.view.Window;
+
+
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -215,24 +220,18 @@ public class CropImageActivity extends MonitoredActivity {
 
             Rect imageRect = new Rect(0, 0, width, height);
 
-            // Make the default size about 4/5 of the width or height
-            int cropWidth = Math.min(width, height) * 4 / 5;
-            @SuppressWarnings("SuspiciousNameCombination")
-            int cropHeight = cropWidth;
 
-            if (aspectX != 0 && aspectY != 0) {
-                if (aspectX > aspectY) {
-                    cropHeight = cropWidth * aspectY / aspectX;
-                } else {
-                    cropWidth = cropHeight * aspectX / aspectY;
-                }
-            }
+            int cropHeight = Math.round(height * (1/2f));
 
-            int x = (width - cropWidth) / 2;
-            int y = (height - cropHeight) / 2;
+            Display display = getWindowManager().getDefaultDisplay();
+            final Point size = new Point();
+            display.getSize(size);
+            float x = size.x/2;
+            float  y= size.y/2;
 
-            RectF cropRect = new RectF(x, y, x + cropWidth, y + cropHeight);
-            hv.setup(imageView.getUnrotatedMatrix(), imageRect, cropRect, aspectX != 0 && aspectY != 0);
+            Path hexagon = HexagonUtil.createPath(x, y, HexagonUtil.HexagonType.VERTICAL, 0, cropHeight, 0);
+
+            hv.setup(imageView.getUnrotatedMatrix(), imageRect, hexagon, aspectX != 0 && aspectY != 0);
             imageView.add(hv);
         }
 

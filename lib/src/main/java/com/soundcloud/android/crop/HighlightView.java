@@ -55,7 +55,7 @@ class HighlightView {
     enum ModifyMode { None, Move, Grow }
     enum HandleMode { Changing, Always, Never }
 
-    RectF cropRect; // Image space
+   RectF cropRect = new RectF(); // Image space
     Rect drawRect; // Screen space
     Matrix matrix;
     private RectF imageRect; // Image space
@@ -77,6 +77,7 @@ class HighlightView {
     private float outlineWidth;
     private boolean isFocused;
 
+    private Path hexagon;
     public HighlightView(View context) {
         viewContext = context;
         initStyles(context.getContext());
@@ -87,8 +88,8 @@ class HighlightView {
         context.getTheme().resolveAttribute(R.attr.cropImageStyle, outValue, true);
         TypedArray attributes = context.obtainStyledAttributes(outValue.resourceId, R.styleable.CropImageView);
         try {
-            showThirds = attributes.getBoolean(R.styleable.CropImageView_showThirds, false);
-            showCircle = attributes.getBoolean(R.styleable.CropImageView_showCircle, false);
+            showThirds = false;//attributes.getBoolean(R.styleable.CropImageView_showThirds, false);
+            showCircle = true;//attributes.getBoolean(R.styleable.CropImageView_showCircle, false);
             highlightColor = attributes.getColor(R.styleable.CropImageView_highlightColor,
                     DEFAULT_HIGHLIGHT_COLOR);
             handleMode = HandleMode.values()[attributes.getInt(R.styleable.CropImageView_showHandles, 0)];
@@ -97,14 +98,14 @@ class HighlightView {
         }
     }
 
-    public void setup(Matrix m, Rect imageRect, RectF cropRect, boolean maintainAspectRatio) {
+    public void setup(Matrix m, Rect imageRect, Path hexagon, boolean maintainAspectRatio) {
         matrix = new Matrix(m);
 
-        this.cropRect = cropRect;
+        this.hexagon = hexagon;
         this.imageRect = new RectF(imageRect);
         this.maintainAspectRatio = maintainAspectRatio;
 
-        initialAspectRatio = this.cropRect.width() / this.cropRect.height();
+        initialAspectRatio = 1;//this.cropRect.width() / this.cropRect.height();
         drawRect = computeLayout();
 
         outsidePaint.setARGB(125, 50, 50, 50);
@@ -126,27 +127,29 @@ class HighlightView {
 
     protected void draw(Canvas canvas) {
         canvas.save();
-        Path path = new Path();
+
         outlinePaint.setStrokeWidth(outlineWidth);
         if (!hasFocus()) {
             outlinePaint.setColor(Color.BLACK);
             canvas.drawRect(drawRect, outlinePaint);
+
         } else {
             Rect viewDrawingRect = new Rect();
             viewContext.getDrawingRect(viewDrawingRect);
 
-            path.addRect(new RectF(drawRect), Path.Direction.CW);
+            //path.addRect(new RectF(drawRect), Path.Direction.CW);
+
             outlinePaint.setColor(highlightColor);
 
             if (isClipPathSupported(canvas)) {
-                canvas.clipPath(path, Region.Op.DIFFERENCE);
+                canvas.clipPath(hexagon, Region.Op.DIFFERENCE);
                 canvas.drawRect(viewDrawingRect, outsidePaint);
             } else {
                 drawOutsideFallback(canvas);
             }
 
             canvas.restore();
-            canvas.drawPath(path, outlinePaint);
+            canvas.drawPath(hexagon, outlinePaint);
 
             if (showThirds) {
                 drawThirds(canvas);
@@ -195,9 +198,9 @@ class HighlightView {
         int yMiddle = drawRect.top + ((drawRect.bottom - drawRect.top) / 2);
 
         canvas.drawCircle(drawRect.left, yMiddle, handleRadius, handlePaint);
-        canvas.drawCircle(xMiddle, drawRect.top, handleRadius, handlePaint);
+        //canvas.drawCircle(xMiddle, drawRect.top, handleRadius, handlePaint);
         canvas.drawCircle(drawRect.right, yMiddle, handleRadius, handlePaint);
-        canvas.drawCircle(xMiddle, drawRect.bottom, handleRadius, handlePaint);
+       // canvas.drawCircle(xMiddle, drawRect.bottom, handleRadius, handlePaint);
     }
 
     private void drawThirds(Canvas canvas) {
@@ -376,6 +379,7 @@ class HighlightView {
         RectF r = new RectF(cropRect.left, cropRect.top,
                             cropRect.right, cropRect.bottom);
         matrix.mapRect(r);
+
         return new Rect(Math.round(r.left), Math.round(r.top),
                         Math.round(r.right), Math.round(r.bottom));
     }
